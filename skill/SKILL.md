@@ -4,7 +4,8 @@ description: >
   Automated job search pipeline that finds, scores, and surfaces job listings
   against a user profile. Use this skill when the user says /brand-new-day,
   "run the scanner", "find jobs", "check for new listings", or any variation of
-  running a job search scan. Also triggers on sub-commands: /brand-new-day review,
+  running a job search scan. Also triggers on sub-commands: /brand-new-day init,
+  /brand-new-day doctor, /brand-new-day reset, /brand-new-day review,
   /brand-new-day status, /brand-new-day rescore, /brand-new-day prep [id].
 ---
 
@@ -23,6 +24,9 @@ It replaces the 1-2 hour daily manual process of checking email digests, clickin
 | Command | What it does |
 |---|---|
 | `/brand-new-day` | Full scan: search → fetch → score → generate dashboard |
+| `/brand-new-day init` | Validate a fresh install: config + BND_HOME + .env + JSearch test call |
+| `/brand-new-day doctor` | Re-run the validator against an existing install. Reports anything broken |
+| `/brand-new-day reset` | Archive current `data/` to `data/archive-{date}/` and re-create empty starters |
 | `/brand-new-day review` | Interactive review of unreviewed listings |
 | `/brand-new-day status` | Show last run summary + pending items |
 | `/brand-new-day rescore` | Re-score all unreviewed listings (after config changes) |
@@ -488,6 +492,59 @@ All JSON updates in this step use native Read → modify → Write (never inline
 ---
 
 ## Execution Procedure — Sub-Commands
+
+### Validation Procedure (shared by `init` and `doctor`)
+
+The validator runs five checks. `init` runs them on a fresh install (and writes starter files if any are missing); `doctor` runs them against an existing install (read-only, never overwrites).
+
+1. **Config parses.** Read `$BND_HOME/config.yml`. Confirm it parses as YAML and has the expected top-level keys (`keywords`, `sources`, `scoring`, `scheduling`, `output`, `profile_path`).
+2. **BND_HOME is writable.** Confirm `$BND_HOME` exists and is writable (try a touch + rm of a `.bnd-write-test` file).
+3. **`.env` has `RAPIDAPI_KEY`.** Read `$BND_HOME/.env`. Confirm `RAPIDAPI_KEY=` is present and non-placeholder (i.e. not `your_rapidapi_key_here`).
+4. **JSearch test call works.** Run `python3 $BND_HOME/bnd-scan.py --query "Product Manager remote" --date-posted week` with a small `--num-pages 1`. Confirm valid JSON output with `data` array. This costs 1 API request — note it in the user-facing summary.
+5. **Profile loads.** Read the file at `profile_path` (resolved via `{BND_HOME}` substitution). Confirm it's non-empty and not the literal `.example` template content.
+
+Report each check's result as a one-line ✓ or ✗ with a short explanation. After the five checks, print a summary: "5/5 passed" or "N issue(s) — see above."
+
+### `/brand-new-day init`
+
+For first-time setup after `install.sh`. Validates the install and creates starter data files if missing.
+
+1. Run the **Validation Procedure** above. Report results.
+2. For each missing file in `$BND_HOME/data/`, write a minimal starter:
+   - `listings.json` → `[]`
+   - `reviewed.json` → `{}`
+   - `scan-state.json` → `{}`
+   - `run-log.json` → `[]`
+   - `api-usage.json` → `{}`
+   - `credit-ledger.json` → `{}`
+   (Note: `install.sh` already creates these. This step is a safety net for users who installed manually or wiped `data/`.)
+3. If validation passed all 5 checks, print: "Ready. Run `/brand-new-day` to start your first scan."
+4. If any validation check failed, print the failures and how to fix each. Do NOT proceed to first scan.
+
+### `/brand-new-day doctor`
+
+For diagnosing an existing install when something seems off.
+
+1. Run the **Validation Procedure**. Report results.
+2. Additionally, sanity-check the data layer:
+   - `data/listings.json` parses as JSON array
+   - `data/reviewed.json` parses as JSON object
+   - `data/run-log.json` parses as JSON array; report the most recent entry's `status` and `completed_at`
+   - `data/api-usage.json` parses; report current month's request count
+3. Print a summary. Read-only — never overwrites or repairs files. The user decides whether to run `init`, `reset`, or fix manually.
+
+### `/brand-new-day reset`
+
+For users who want to wipe their pipeline and start fresh — keeps the install, archives the data.
+
+1. **Confirm with the user before doing anything.** Show what will happen: "This will move `$BND_HOME/data/*.json` to `$BND_HOME/data/archive-{YYYY-MM-DD}/` and create empty starters. Your config, profile, and `.env` are not affected. Continue?"
+2. If the user says no, stop.
+3. If yes:
+   a. `mkdir -p $BND_HOME/data/archive-{YYYY-MM-DD}` (use today's date in ISO format)
+   b. Move every `*.json` file in `$BND_HOME/data/` (not subdirectories) into the archive dir
+   c. Re-create empty starters (same set as `init` step 2)
+   d. If `dashboard.html` exists, replace it with a copy of `$BND_HOME/dashboard-template.html` if available, otherwise leave it
+4. Report: "Reset complete. {N} files archived to data/archive-{date}/. Empty starters created. Run `/brand-new-day` to begin a fresh pipeline."
 
 ### `/brand-new-day status`
 
