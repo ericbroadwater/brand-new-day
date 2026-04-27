@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Brand New Day pre-commit hook — secret-pattern guard.
+#
+# Install (once, per clone):
+#     git config core.hooksPath .githooks
+#
+# Blocks commits whose staged diff contains recognizable API-key or
+# credential patterns. Not a substitute for .gitignore — a second line of
+# defense in case a tracked file (README, script, etc.) accidentally
+# inlines a secret.
+
+set -euo pipefail
+
+# Patterns to block. Keep these tight — false positives burn trust.
+PATTERNS=(
+    "x-rapidapi-key:[[:space:]]*[A-Za-z0-9]{30,}"
+    "X-RapidAPI-Key:[[:space:]]*[A-Za-z0-9]{30,}"
+    "RAPIDAPI_KEY=[A-Za-z0-9]{30,}"
+    "AKIA[0-9A-Z]{16}"
+    "ya29\\.[0-9A-Za-z_-]+"
+    "-----BEGIN (RSA|OPENSSH|EC|DSA|PGP) PRIVATE KEY-----"
+    "ghp_[A-Za-z0-9]{30,}"
+    "sk-[A-Za-z0-9]{20,}"
+)
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+if [[ -z "$staged" ]]; then
+    exit 0
+fi
+
+hits=0
+for pat in "${PATTERNS[@]}"; do
+    if git diff --cached -U0 -- ':!.githooks/pre-commit' ':!*.example' | grep -E "$pat" >/dev/null 2>&1; then
+        echo "✗ pre-commit: matched secret pattern: $pat"
+        hits=$((hits + 1))
+    fi
+done
+
+if (( hits > 0 )); then
+    echo ""
+    echo "Blocked $hits pattern match(es). Review staged diff:"
+    echo "    git diff --cached"
+    echo ""
+    echo "If this is a false positive, commit with --no-verify (use sparingly)."
+    exit 1
+fi
+
+exit 0

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand New Day</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+    background: #fafbfc;
+    color: #172b4d;
+    min-height: 100vh;
+    padding: 24px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 16px; padding-bottom: 16px;
+    border-bottom: 2px solid #0052cc;
+  }
+  .header-left h1 { font-size: 20px; font-weight: 600; color: #172b4d; }
+  .header-left .subtitle { font-size: 12px; color: #6b778c; margin-top: 4px; }
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .status-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 3px; text-transform: uppercase; }
+  .status-badge.complete { background: #e3fcef; color: #006644; }
+  .status-badge.partial { background: #fffae6; color: #ff8b00; }
+  .header-stats { display: flex; gap: 16px; }
+  .header-stat { display: flex; flex-direction: column; align-items: flex-end; }
+  .header-stat .val { font-size: 18px; font-weight: 600; color: #0052cc; line-height: 1.2; }
+  .header-stat .lbl { font-size: 11px; color: #6b778c; margin-top: 1px; }
+
+  .filter-bar { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 2px solid #dfe1e6; padding-bottom: 0; }
+  .filter-tab { font-size: 14px; font-weight: 500; color: #6b778c; background: none; border: none; padding: 10px 18px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.15s; }
+  .filter-tab:hover { color: #42526e; }
+  .filter-tab.active { color: #0052cc; border-bottom-color: #0052cc; font-weight: 600; }
+  .filter-tab .count { background: #dfe1e6; border-radius: 100px; padding: 1px 7px; font-size: 11px; margin-left: 5px; color: #42526e; font-weight: 600; }
+  .filter-tab.active .count { background: #deebff; color: #0052cc; }
+
+  .listings { display: flex; flex-direction: column; gap: 8px; }
+  .listing-card { background: #ffffff; border-radius: 8px; padding: 16px 18px; box-shadow: 0 1px 1px rgba(9,30,66,0.25), 0 0 1px rgba(9,30,66,0.31); transition: box-shadow 0.2s; }
+  .listing-card:hover { box-shadow: 0 4px 8px -2px rgba(9,30,66,0.25), 0 0 1px rgba(9,30,66,0.31); }
+  .listing-card.partial-data { border-left: 3px solid #ff8b00; }
+  .listing-card.location-fail { border-left: 3px solid #de350b; }
+
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 10px; }
+  .card-title { font-size: 16px; font-weight: 600; color: #172b4d; line-height: 1.3; }
+  .card-company { font-size: 14px; color: #42526e; font-weight: 400; margin-top: 2px; }
+  .card-meta { font-size: 12px; color: #6b778c; margin-top: 3px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .card-meta span::before { content: '\00b7'; margin-right: 4px; color: #c1c7d0; }
+  .card-meta span:first-child::before { display: none; }
+
+  .composite-score { font-size: 28px; font-weight: 700; line-height: 1; flex-shrink: 0; text-align: center; min-width: 56px; white-space: nowrap; }
+  .composite-score .out-of { font-size: 12px; color: #6b778c; font-weight: 400; }
+  .score-5 { color: #006644; }
+  .score-4 { color: #0052cc; }
+  .score-3 { color: #ff8b00; }
+  .score-2 { color: #de350b; }
+  .score-1 { color: #bf2600; }
+  .score-0 { color: #97a0af; }
+
+  .fit-summary { font-size: 14px; color: #42526e; margin-bottom: 12px; line-height: 1.5; }
+
+  .salary-badge { display: inline-block; font-size: 13px; font-weight: 600; color: #172b4d; background: #f4f5f7; border: 1px solid #dfe1e6; border-radius: 6px; padding: 4px 10px; margin-bottom: 12px; }
+  .salary-badge .salary-label { font-size: 11px; font-weight: 500; color: #6b778c; margin-right: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+  .score-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; margin-bottom: 14px; }
+  .score-dim { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; padding: 8px 10px; border-radius: 6px; border: 1px solid transparent; }
+  .score-dim .dim-label { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .score-dim .dim-name { font-size: 10px; color: #6b778c; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; margin-bottom: 2px; }
+  .score-dim .dim-note { color: #42526e; font-size: 12px; line-height: 1.4; }
+  .score-dim .dim-score { font-weight: 700; font-size: 20px; line-height: 1; flex-shrink: 0; min-width: 24px; text-align: center; }
+  .score-dim.bg-high { background: #e3fcef; border-color: #abf5d1; }
+  .score-dim.bg-mid { background: #fffae6; border-color: #ffe380; }
+  .score-dim.bg-low { background: #ffebe6; border-color: #ffbdad; }
+
+  .card-actions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid #ebecf0; }
+  .action-btn { font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 6px; border: none; background: #f4f5f7; color: #42526e; cursor: pointer; transition: background 0.15s; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+  .action-btn:hover { background: #ebecf0; }
+  .action-btn.primary { background: #0052cc; color: #ffffff; font-weight: 600; }
+  .action-btn.primary:hover { background: #0747a6; }
+  .action-btn.applied-btn { background: transparent; color: #0052cc; border: 1.5px solid #0052cc; font-weight: 600; }
+  .action-btn.applied-btn:hover { background: #deebff; }
+  .action-btn.pass { color: #6b778c; background: transparent; }
+  .action-btn.pass:hover { background: #fffae6; color: #ff8b00; }
+  .card-id { font-size: 11px; color: #c1c7d0; margin-left: auto; align-self: center; font-family: monospace; }
+
+  .new-badge { font-size: 10px; font-weight: 700; background: #e3fcef; color: #006644; padding: 1px 6px; border-radius: 3px; margin-left: 8px; vertical-align: middle; text-transform: uppercase; }
+  .fail-badge { font-size: 10px; font-weight: 700; background: #ffebe6; color: #de350b; padding: 1px 6px; border-radius: 3px; margin-left: 8px; vertical-align: middle; text-transform: uppercase; }
+
+  .below-threshold { margin-top: 24px; }
+  .collapse-toggle { font-size: 12px; font-weight: 500; color: #6b778c; background: #f4f5f7; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer; width: 100%; text-align: left; transition: background 0.15s; }
+  .collapse-toggle:hover { background: #ebecf0; }
+  .collapse-toggle .arrow { display: inline-block; transition: transform 0.2s; margin-right: 6px; }
+  .collapse-toggle.open .arrow { transform: rotate(90deg); }
+  .collapsed-listings { display: none; margin-top: 8px; }
+  .collapsed-listings.visible { display: flex; flex-direction: column; gap: 6px; }
+
+  .run-log { margin-top: 24px; padding: 14px 16px; background: #ffffff; border-radius: 8px; box-shadow: 0 1px 1px rgba(9,30,66,0.25), 0 0 1px rgba(9,30,66,0.31); }
+  .run-log .card-label { font-size: 11px; color: #6b778c; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .run-log .card-label::after { content: ''; flex: 1; height: 1px; background: #ebecf0; }
+  .run-log-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+  .run-log-item { display: flex; flex-direction: column; }
+  .run-log-item .val { font-size: 15px; font-weight: 600; color: #172b4d; }
+  .run-log-item .lbl { font-size: 11px; color: #6b778c; margin-top: 1px; }
+  .run-errors { margin-top: 10px; padding: 8px 12px; background: #fffae6; border-radius: 6px; font-size: 12px; color: #6b4c09; line-height: 1.5; }
+
+  @media (max-width: 640px) { body { padding: 12px; } .header { flex-direction: column; gap: 12px; } .header-right { align-items: flex-start; } .score-grid { grid-template-columns: 1fr; } .card-actions { flex-direction: column; } .action-btn { justify-content: center; } }
+  @media print { body { padding: 12px; background: #fff; } .listing-card { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; } .action-btn, .filter-bar { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Brand New Day</h1>
+    <div class="subtitle" id="header-subtitle">Loading...</div>
+  </div>
+  <div class="header-right">
+    <span class="status-badge complete" id="run-status-badge">COMPLETE</span>
+    <div class="header-stats">
+      <div class="header-stat"><span class="val" id="stat-total">—</span><span class="lbl">Total listings</span></div>
+      <div class="header-stat"><span class="val" id="stat-pending">—</span><span class="lbl">Pending review</span></div>
+      <div class="header-stat"><span class="val" id="stat-new-this-run">—</span><span class="lbl">New this run</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <button class="filter-tab active" data-filter="new">New<span class="count">0</span></button>
+  <button class="filter-tab" data-filter="applied">Applied<span class="count">0</span></button>
+  <button class="filter-tab" data-filter="reviewed">Reviewed<span class="count">0</span></button>
+  <button class="filter-tab" data-filter="passed">Passed<span class="count">0</span></button>
+  <button class="filter-tab" data-filter="all">All<span class="count">0</span></button>
+</div>
+
+<div class="listings" id="above-threshold-listings"></div>
+
+<div class="below-threshold">
+  <button class="collapse-toggle" id="below-toggle" onclick="toggleBelow(this)"><span class="arrow">&#9654;</span> Below threshold (<span id="below-count">0</span> listings, 0&ndash;3.4)</button>
+  <div class="collapsed-listings" id="below-threshold-listings"></div>
+</div>
+
+<div class="run-log">
+  <div class="card-label" id="run-log-label">Run Log</div>
+  <div class="run-log-grid" id="run-log-grid"></div>
+  <div class="run-errors" id="run-log-notes" style="display:none"></div>
+</div>
+
+<script>
+// ── EMBEDDED DATA ─────────────────────────────────────────────────────────────
+
+const LISTINGS = [];
+
+const RUN_LOG = { run_id: "", completed_at: "", status: "pending", queries_executed: 0, listings_new: 0, notes: "No scans yet — run /brand-new-day to start." };
+
+const THRESHOLD = 3.5;
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+
+function scoreClass(s) {
+  if (s >= 5) return 'score-5';
+  if (s >= 4) return 'score-4';
+  if (s >= 3) return 'score-3';
+  if (s >= 2) return 'score-2';
+  if (s >= 1) return 'score-1';
+  return 'score-0';
+}
+
+function dimBg(s) {
+  if (s >= 4) return 'bg-high';
+  if (s >= 3) return 'bg-mid';
+  return 'bg-low';
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatRunDate(isoStr) {
+  const d = new Date(isoStr);
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return months[d.getUTCMonth()] + ' ' + d.getUTCDate() + ', ' + d.getUTCFullYear();
+}
+
+function isNewThisRun(listing) {
+  const runDatePrefix = RUN_LOG.run_id.slice(0, 10); // "2026-04-15"
+  return !!(listing.discoveredAt && listing.discoveredAt.startsWith(runDatePrefix));
+}
+
+// ── LOCALSTORAGE ──────────────────────────────────────────────────────────────
+
+const STATUS_ORDER = { applied: 3, reviewed: 2, new: 1, passed: 0 };
+
+function mergeStatus(a, b) {
+  const ao = STATUS_ORDER[a] !== undefined ? STATUS_ORDER[a] : -1;
+  const bo = STATUS_ORDER[b] !== undefined ? STATUS_ORDER[b] : -1;
+  // Prefer more "advanced" status; on tie prefer a (bnd-actions has timestamp)
+  return ao >= bo ? a : b;
+}
+
+function loadState() {
+  const state = {};
+
+  // bnd-actions format: { id: { status, timestamp } }
+  try {
+    const bndActions = JSON.parse(localStorage.getItem('bnd-actions') || '{}');
+    Object.entries(bndActions).forEach(function(entry) {
+      var id = entry[0], data = entry[1];
+      var s = (typeof data === 'object' && data !== null) ? data.status : data;
+      if (s) state[id] = s;
+    });
+  } catch(e) {}
+
+  // bnd-v2-state format: { id: "status" }
+  try {
+    var bndV2 = JSON.parse(localStorage.getItem('bnd-v2-state') || '{}');
+    Object.entries(bndV2).forEach(function(entry) {
+      var id = entry[0], s = entry[1];
+      if (!state[id]) {
+        state[id] = s;
+      } else {
+        state[id] = mergeStatus(state[id], s);
+      }
+    });
+  } catch(e) {}
+
+  return state;
+}
+
+function saveState(id, status) {
+  // Write to bnd-actions (primary, with timestamps)
+  try {
+    var bndActions = JSON.parse(localStorage.getItem('bnd-actions') || '{}');
+    bndActions[id] = { status: status, timestamp: new Date().toISOString() };
+    localStorage.setItem('bnd-actions', JSON.stringify(bndActions));
+  } catch(e) {}
+
+  // Write to bnd-v2-state (backwards compat)
+  try {
+    var bndV2 = JSON.parse(localStorage.getItem('bnd-v2-state') || '{}');
+    bndV2[id] = status;
+    localStorage.setItem('bnd-v2-state', JSON.stringify(bndV2));
+  } catch(e) {}
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+
+function buildAboveCard(listing, state) {
+  var status = state[listing.id] || 'new';
+  var isNew = isNewThisRun(listing);
+
+  var newBadge = isNew ? '<span class="new-badge">NEW</span>' : '';
+  var failBadge = listing.locationFail ? '<span class="fail-badge">LOCATION FAIL</span>' : '';
+  var cardClass = listing.locationFail ? 'listing-card location-fail' : (listing.partial ? 'listing-card partial-data' : 'listing-card');
+
+  var metaParts = [listing.location, listing.source];
+  if (listing.posted) metaParts.push(listing.posted);
+  var metaHTML = metaParts.map(function(p){ return '<span>' + esc(p) + '</span>'; }).join('');
+
+  var salaryHTML = listing.comp
+    ? '<div class="salary-badge"><span class="salary-label">Salary</span>' + esc(listing.comp) + '</div>'
+    : '';
+
+  var dimsHTML = listing.dims.map(function(d) {
+    var bg = dimBg(d.s);
+    var sc = scoreClass(d.s);
+    return '<div class="score-dim ' + bg + '"><span class="dim-score ' + sc + '">' + d.s + '</span><span class="dim-label"><span class="dim-name">' + esc(d.n) + '</span><span class="dim-note">' + esc(d.note) + '</span></span></div>';
+  }).join('');
+
+  var compositeClass = scoreClass(Math.floor(listing.score));
+  var id = esc(listing.id);
+
+  return '<div class="' + cardClass + '" data-status="' + esc(status) + '" data-id="' + id + '">'
+    + '<div class="card-top">'
+    + '<div>'
+    + '<div class="card-title">' + esc(listing.title) + failBadge + newBadge + '</div>'
+    + '<div class="card-company">' + esc(listing.company) + '</div>'
+    + '<div class="card-meta">' + metaHTML + '</div>'
+    + '</div>'
+    + '<div class="composite-score ' + compositeClass + '">' + listing.score + '<span class="out-of"> /5</span></div>'
+    + '</div>'
+    + '<div class="fit-summary">' + esc(listing.summary) + '</div>'
+    + salaryHTML
+    + '<div class="score-grid">' + dimsHTML + '</div>'
+    + '<div class="card-actions">'
+    + '<a href="' + esc(listing.url) + '" target="_blank" class="action-btn primary">Apply &rarr;</a>'
+    + '<button class="action-btn applied-btn" onclick="setStatus(\'' + listing.id + '\',\'applied\')">Mark Applied</button>'
+    + '<button class="action-btn" onclick="setStatus(\'' + listing.id + '\',\'reviewed\')">Mark Reviewed</button>'
+    + '<button class="action-btn pass" onclick="setStatus(\'' + listing.id + '\',\'passed\')">Pass</button>'
+    + '<span class="card-id">' + id + '</span>'
+    + '</div>'
+    + '</div>';
+}
+
+function buildBelowCard(listing, state) {
+  var status = state[listing.id] || 'new';
+  var isNew = isNewThisRun(listing);
+
+  var newBadge = isNew ? '<span class="new-badge">NEW</span>' : '';
+  var failBadge = listing.locationFail ? '<span class="fail-badge">LOCATION FAIL</span>' : '';
+  var cardClass = 'listing-card';
+  if (listing.locationFail) cardClass += ' location-fail';
+  else if (listing.partial) cardClass += ' partial-data';
+
+  var metaParts = [listing.source];
+  if (listing.partial) metaParts.push('Partial data');
+  var metaHTML = metaParts.map(function(p){ return '<span>' + esc(p) + '</span>'; }).join('');
+
+  var salaryHTML = listing.comp
+    ? '<div class="salary-badge"><span class="salary-label">Salary</span>' + esc(listing.comp) + '</div>'
+    : '';
+
+  var compositeClass = scoreClass(Math.floor(listing.score));
+  var id = esc(listing.id);
+
+  return '<div class="' + cardClass + '" data-status="' + esc(status) + '" data-id="' + id + '">'
+    + '<div class="card-top">'
+    + '<div>'
+    + '<div class="card-title">' + esc(listing.title) + failBadge + newBadge + '</div>'
+    + '<div class="card-company">' + esc(listing.company) + '</div>'
+    + '<div class="card-meta">' + metaHTML + '</div>'
+    + '</div>'
+    + '<div class="composite-score ' + compositeClass + '">' + listing.score + '<span class="out-of"> /5</span></div>'
+    + '</div>'
+    + salaryHTML
+    + '<div class="fit-summary">' + esc(listing.summary) + '</div>'
+    + '<div class="card-actions">'
+    + '<a href="' + esc(listing.url) + '" target="_blank" class="action-btn">View &rarr;</a>'
+    + '<button class="action-btn pass" onclick="setStatus(\'' + listing.id + '\',\'passed\')">Pass</button>'
+    + '<span class="card-id">' + id + '</span>'
+    + '</div>'
+    + '</div>';
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+
+function init() {
+  var state = loadState();
+
+  var above = LISTINGS.filter(function(l){ return l.score >= THRESHOLD; });
+  var below = LISTINGS.filter(function(l){ return l.score < THRESHOLD; });
+
+  // Render above threshold
+  document.getElementById('above-threshold-listings').innerHTML =
+    above.map(function(l){ return buildAboveCard(l, state); }).join('');
+
+  // Render below threshold
+  document.getElementById('below-threshold-listings').innerHTML =
+    below.map(function(l){ return buildBelowCard(l, state); }).join('');
+  document.getElementById('below-count').textContent = below.length;
+
+  // Run log header
+  var runDate = formatRunDate(RUN_LOG.completed_at);
+  document.getElementById('run-log-label').textContent = 'Run Log \u2014 ' + runDate;
+
+  document.getElementById('run-log-grid').innerHTML =
+    '<div class="run-log-item"><span class="val">' + RUN_LOG.queries_executed + '</span><span class="lbl">Queries executed</span></div>'
+    + '<div class="run-log-item"><span class="val">JSearch</span><span class="lbl">Sources attempted</span></div>'
+    + '<div class="run-log-item"><span class="val">' + RUN_LOG.listings_new + ' new</span><span class="lbl">Listings scored</span></div>';
+
+  if (RUN_LOG.notes) {
+    var notesEl = document.getElementById('run-log-notes');
+    notesEl.style.display = '';
+    notesEl.innerHTML = '<strong>Notes:</strong> ' + esc(RUN_LOG.notes);
+  }
+
+  // Header subtitle
+  document.getElementById('header-subtitle').textContent = 'Last run: ' + runDate + ' \u00b7 JSearch';
+
+  // Header stats
+  var total = LISTINGS.length;
+  var pending = LISTINGS.filter(function(l){ return (state[l.id] || 'new') === 'new'; }).length;
+  var newThisRun = LISTINGS.filter(function(l){ return isNewThisRun(l); }).length;
+
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-pending').textContent = pending;
+  document.getElementById('stat-new-this-run').textContent = newThisRun;
+
+  // Run status badge
+  var badge = document.getElementById('run-status-badge');
+  if (RUN_LOG.status === 'complete') {
+    badge.className = 'status-badge complete';
+    badge.textContent = 'COMPLETE';
+  } else {
+    badge.className = 'status-badge partial';
+    badge.textContent = 'PARTIAL';
+  }
+
+  updateCounts();
+  applyFilter(document.querySelector('.filter-tab.active').dataset.filter);
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────────
+
+function setStatus(id, status) {
+  var card = document.querySelector('[data-id="' + id + '"]');
+  if (!card) return;
+  card.dataset.status = status;
+  saveState(id, status);
+  updateCounts();
+  applyFilter(document.querySelector('.filter-tab.active').dataset.filter);
+}
+
+function updateCounts() {
+  var cards = document.querySelectorAll('.listing-card');
+  var counts = { new: 0, applied: 0, reviewed: 0, passed: 0, all: 0 };
+  cards.forEach(function(c) {
+    var s = c.dataset.status || 'new';
+    if (counts[s] !== undefined) counts[s]++;
+    counts.all++;
+  });
+  document.querySelectorAll('.filter-tab').forEach(function(tab) {
+    var f = tab.dataset.filter;
+    var countEl = tab.querySelector('.count');
+    if (countEl) countEl.textContent = counts[f] !== undefined ? counts[f] : 0;
+  });
+  // Keep pending stat in sync
+  document.getElementById('stat-pending').textContent = counts.new;
+}
+
+function applyFilter(filter) {
+  document.querySelectorAll('.listing-card').forEach(function(card) {
+    var status = card.dataset.status || 'new';
+    card.style.display = (filter === 'all' || status === filter) ? '' : 'none';
+  });
+}
+
+document.querySelectorAll('.filter-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.filter-tab').forEach(function(t){ t.classList.remove('active'); });
+    tab.classList.add('active');
+    applyFilter(tab.dataset.filter);
+  });
+});
+
+function toggleBelow(btn) {
+  btn.classList.toggle('open');
+  btn.nextElementSibling.classList.toggle('visible');
+}
+
+// Boot
+init();
+</script>
+
+</body>
+</html>

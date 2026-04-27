@@ -1,0 +1,21 @@
+# Secrets
+.env
+*.local.json
+
+# Runtime data (per-user, never committed)
+runtime/data/*.json
+runtime/dashboard.html
+runtime/profile.md
+runtime/config.yml
+
+# Node
+node_modules/
+package-lock.json
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+*.swp

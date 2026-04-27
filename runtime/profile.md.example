@@ -1,0 +1,91 @@
+# User Profile — Brand New Day
+
+This file describes who you are, what role you're targeting, and what the scanner
+should treat as a strong or weak match. The scoring engine loads this at scan
+time and uses it as the profile context for every listing it scores.
+
+Fill in each section honestly. The scanner calibrates against this — if it's
+vague, your scores will be vague. If it's specific, it'll surface the right
+listings and reject the wrong ones.
+
+---
+
+## Background
+
+*2–4 sentences on your career arc. What industries, what roles, what scale.
+Don't write a resume — write the summary a recruiter would if they only had 30
+seconds. Name the domains, seniority level, and any distinctive specialties.*
+
+Example: "12-year Product Manager. Career arc: sports media → radio → SaaS/CMS
+→ growth PM at a DXP. Last role led growth onboarding and activation at a
+headless CMS platform. Deep in PLG, platform PM, and content/publishing
+domains."
+
+---
+
+## Target Role
+
+*The title(s) you want. Be concrete — "Senior PM", "Director of Product",
+"Staff PM", "Head of Product". Add the functional specialty if it matters
+("Growth PM", "Platform PM").*
+
+Example: "Senior / Staff / Director Product Manager. Preference for Growth PM
+or Platform PM specialization."
+
+---
+
+## Hard Requirements
+
+*Deal-breakers. If a listing fails these, the scanner should reject it outright.
+Examples: remote-only, no clearance, no relocation, specific comp floor.*
+
+- Location: Remote, or hybrid within [your city]
+- No active security clearance required
+- No relocation
+
+---
+
+## Nice-to-Haves
+
+*Things that push a listing from "okay" to "great" but aren't deal-breakers.
+These map to the `score_5` anchors in config.yml → scoring.dimensions.*
+
+- SaaS, CMS, DXP, platform, or developer-tool domain
+- API-first / headless / data infra / dev tools
+- Growth/PLG scope: onboarding, activation, lifecycle, trials, experimentation
+- People management scope (managing PMs or cross-functional teams)
+- Funded, growing companies with real product traction
+
+---
+
+## Comp Floor
+
+*Your minimum acceptable base comp. The scanner's `comp_signals` dimension
+uses `config.yml → scoring.comp_bands` thresholds — keep this aligned with
+those values.*
+
+- Floor: $140,000 base
+- Target: $160,000+ base
+
+---
+
+## Locations
+
+*Where you'll work. Used by the `location_fit` hard gate and for query
+construction. Keep this aligned with `config.yml → keywords.locations` and
+`scoring.hard_gates.location_fit.pass_keywords`.*
+
+- Remote (US-based)
+- [Your city] (hybrid acceptable)
+
+---
+
+## Disqualifiers
+
+*Domains or role shapes that are a hard "no" — not just "low score", but
+"never surface". Keep these tight; anything here means the listing gets
+filtered before scoring.*
+
+- FHIR / healthcare data interop (not my domain)
+- Defense / cleared work
+- Pure IC contributor roles at Senior+ level (want leadership scope)

@@ -1,0 +1,174 @@
+# ============================================================
+# Brand New Day — Configuration
+# ============================================================
+# Edit this file to tune search behavior, scoring, and scheduling.
+# Changes take effect on the next run.
+# ============================================================
+
+# --- Search ---
+keywords:
+  titles:
+    - "Product Manager"
+    - "Director of Product"
+    - "Head of Product"
+    - "Group Product Manager"
+  locations:
+    - "remote"
+    - "San Diego"
+  exclude_titles:
+    - "intern"
+    - "associate"
+    - "junior"
+    - "engineer"
+    - "designer"
+    - "marketing manager"
+    - "project manager"
+    - "program manager"
+
+sources:
+  - name: "JSearch"
+    type: "aggregator_api"
+    enabled: true
+    priority: 1
+    api_host: "jsearch.p.rapidapi.com"
+    env_key: "RAPIDAPI_KEY"           # reads from brand-new-day/.env
+    date_posted: "week"               # "today" returns 500; "week" or "3days" work
+    results_per_page: 10              # max results per query (1 API call = 1 page)
+    monthly_request_limit: 200        # hard cap on free tier
+  - name: "Adzuna"
+    type: "aggregator_api"
+    enabled: false                    # deferred — JSearch first, Adzuna once validated
+    priority: 2
+
+# --- Scoring ---
+scoring:
+  threshold: 3.5
+
+  # Hard gates — named-filter list (PRD §8.2 line 841).
+  # Alpha ships with location_fit only. Users can add visa_sponsorship, comp_floor, etc.
+  hard_gates:
+    - name: location_fit
+      pass_keywords: ["remote", "san diego", "anywhere", "distributed", "us-based"]
+      fail_action: "score_zero"
+
+  # Legacy flat weights — read by SKILL.md at runtime until 1.5b.4 rewires
+  # SKILL.md to read from `dimensions` below. Kept in sync with dimension weights.
+  weights:
+    seniority_fit: 2.0
+    domain_match: 2.0
+    growth_plg: 2.0
+    platform_architecture: 1.0
+    company_stage: 1.0
+    role_clarity: 1.0
+    people_management: 1.0
+    comp_signals: 0.5
+    application_friction: 0.5
+
+  # 10-dimension rubric (PRD §8.2 line 840).
+  # Extracted from SKILL.md prose — becomes authoritative source after 1.5b.4.
+  dimensions:
+    - name: location_fit
+      hard_gate: true
+      description: >
+        Remote, San Diego, hybrid SD, US-based, distributed, or "anywhere" = pass.
+        On-site elsewhere = fail → composite score forced to 0 (still stored for audit).
+
+    - name: seniority_fit
+      weight: 2.0
+      evaluate: "Title and level signals"
+      score_5: "Senior/Director/Group/Head PM"
+      score_3: "Mid-level PM"
+      score_1: "Junior/Associate"
+
+    - name: domain_match
+      weight: 2.0
+      evaluate: "Industry and vertical"
+      score_5: "SaaS, CMS, DXP, platforms, publishing, content"
+      score_3: "Adjacent (martech, analytics, e-commerce)"
+      score_1: "Hard domain lock (FHIR, defense clearance)"
+
+    - name: growth_plg
+      weight: 2.0
+      evaluate: "Growth signals in JD"
+      score_5: "Onboarding, activation, lifecycle, trials, PLG, experimentation"
+      score_3: "General PM with some growth exposure"
+      score_1: "No growth angle at all"
+
+    - name: platform_architecture
+      weight: 1.0
+      evaluate: "Technical environment"
+      score_5: "API-first, headless, data infra, dev tools, platform PM"
+      score_3: "Standard B2B SaaS"
+      score_1: "Consumer app, no platform angle"
+
+    - name: company_stage
+      weight: 1.0
+      evaluate: "Company maturity + traction"
+      score_5: "Funded/growing, real product, traction"
+      score_3: "Pre-product startup with funding"
+      score_1: "Vague consulting/body shop"
+
+    - name: role_clarity
+      weight: 1.0
+      evaluate: "JD quality and specificity"
+      score_5: "Clear scope, specific problems, real metrics"
+      score_3: "Somewhat defined"
+      score_1: "Buzzword soup, generic responsibilities"
+
+    - name: people_management
+      weight: 1.0
+      evaluate: "Leadership scope"
+      score_5: "Managing PMs or cross-functional teams"
+      score_3: "IC with leadership scope"
+      score_1: "Pure IC, no leadership"
+
+    - name: comp_signals
+      weight: 0.5
+      evaluate: "Compensation indicators (uses comp_bands below)"
+      score_5: "At or above comp_bands.high_usd"
+      score_3: "Between mid_usd and high_usd, or not posted (neutral)"
+      score_1: "Below comp_bands.mid_usd"
+
+    - name: application_friction
+      weight: 0.5
+      evaluate: "Application process complexity"
+      score_5: "Direct apply, simple form"
+      score_3: "Reasonable process"
+      score_1: "5 references + cover letter + assessment"
+
+  # Comp bands (PRD §8.2 line 842 — "comp bands" moved from SKILL.md prose).
+  # Referenced by the comp_signals dimension above.
+  comp_bands:
+    high_usd: 160000                  # >= this → score 5
+    mid_usd: 140000                   # between mid and high, or unknown → score 3
+                                      # below mid → score 1
+
+# --- Scheduling ---
+scheduling:
+  cron_time: "TBD"                   # disabled until JSearch validated
+  operations_budget: 50               # max tool calls per run
+  retry_on_error: true
+  max_retries_per_query: 2
+
+# --- API Budget ---
+# JSearch free tier: 200 requests/month hard limit.
+# Strategy: 4 queries per run — "remote" appended to query text (not the API param).
+# remote_jobs_only API param is BROKEN (confirmed 2026-04-15, returns identical results).
+# Without "remote" in query, results are geo-biased to East Coast.
+# At daily runs = ~120 req/month, leaving headroom for retries and manual runs.
+api_budget:
+  jsearch_monthly_limit: 200
+  queries_per_run: 4                  # 2 title keywords × 2 location variants
+  query_strategy: "append_remote"     # put "remote" in query text, not API param
+  track_file: "data/api-usage.json"   # monthly request counter
+
+# --- Output ---
+output:
+  dashboard_path: "{BND_HOME}/dashboard.html"
+  data_dir: "{BND_HOME}/data"
+
+# --- Profile ---
+# Path to the user profile markdown (see profile.md.example for template).
+# Default: {BND_HOME}/profile.md. Override to point elsewhere if you keep
+# your profile in another location.
+profile_path: "{BND_HOME}/profile.md"
