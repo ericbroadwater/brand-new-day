@@ -210,7 +210,7 @@ The repo ships with no real listings, no real profile, no real `.env`. Fresh clo
 - **Dedup:** Normalized hash of `company + title + location`. Cross-platform duplicates collapse to one entry.
 - **Dashboard:** Single self-contained HTML file. Regenerated from scratch on every run. Light mode, card-based, print-friendly.
 
-Full architecture spec: [PRD §6](./docs/PRD.md) (not included in this alpha — see project memory).
+Full architecture spec: [PRD v1.5](./docs/PRD-v1.5.md) ([reading guide](./docs/PRD-v1.5-reading-guide.md)).
 
 ---
 
