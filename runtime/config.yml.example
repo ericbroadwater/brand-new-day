@@ -3,6 +3,12 @@
 # ============================================================
 # Edit this file to tune search behavior, scoring, and scheduling.
 # Changes take effect on the next run.
+#
+# CUSTOMIZE BEFORE FIRST RUN. The defaults below are calibrated for a
+# Senior Product Manager search. Adapt titles, locations, scoring
+# rubric, and comp bands to your own target role. Fields marked
+# "Your City" / "your city" must be replaced before this config
+# returns useful results.
 # ============================================================
 
 # --- Search ---
@@ -14,7 +20,7 @@ keywords:
     - "Group Product Manager"
   locations:
     - "remote"
-    - "San Diego"
+    - "Your City"          # e.g., "San Diego", "Austin", "New York"
   exclude_titles:
     - "intern"
     - "associate"
@@ -48,7 +54,7 @@ scoring:
   # Alpha ships with location_fit only. Users can add visa_sponsorship, comp_floor, etc.
   hard_gates:
     - name: location_fit
-      pass_keywords: ["remote", "san diego", "anywhere", "distributed", "us-based"]
+      pass_keywords: ["remote", "your city", "anywhere", "distributed", "us-based"]
       fail_action: "score_zero"
 
   # Legacy flat weights — read by SKILL.md at runtime until 1.5b.4 rewires
@@ -70,7 +76,8 @@ scoring:
     - name: location_fit
       hard_gate: true
       description: >
-        Remote, San Diego, hybrid SD, US-based, distributed, or "anywhere" = pass.
+        Remote, your target city (replace "your city" above with your actual city,
+        e.g. "san diego"), US-based, distributed, or "anywhere" = pass.
         On-site elsewhere = fail → composite score forced to 0 (still stored for audit).
 
     - name: seniority_fit
