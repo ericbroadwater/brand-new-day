@@ -186,6 +186,15 @@ Linux `cron` and `systemd timer` variants are a stretch goal for a later release
 
 The repo ships with no real listings, no real profile, no real `.env`. Fresh clones are clean. It's on you to keep your fork that way.
 
+### Publishing your own fork
+
+If you want to publish your fork as a new public repo using `gh repo create --source`, **don't pass `--license`** — those flags are incompatible. The `LICENSE` file already in the repo carries forward via the source push. Example:
+
+```bash
+gh repo create my-fork-name --public --source=. --remote=origin --push
+# NOT: gh repo create my-fork-name --public --source=. --license=MIT  ← errors out
+```
+
 ---
 
 ## Architecture

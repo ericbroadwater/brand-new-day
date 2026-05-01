@@ -282,7 +282,10 @@ Follow these steps exactly. Do not skip steps. Report progress to the user at na
 4. Read `$BND_HOME/data/reviewed.json` — load review states
 5. Read the user profile from the path in `config.yml → profile_path` (default `{BND_HOME}/profile.md`)
 6. Initialize an operations counter at 0 and set budget from `scheduling.operations_budget`
-7. Initialize a run log entry: `{ run_id, trigger, started_at, status: "running", errors: [] }`
+7. Initialize a run log entry. Determine fields **at the moment this step runs**:
+   - `trigger`: set to `"manual"` if Eric invoked the skill directly in this session (e.g., user typed `/brand-new-day`). Set to `"scheduled"` only if invoked from a cron / scheduled-tasks MCP context. If uncertain, default to `"manual"` — per PRD §6.5 (line 580), trigger reflects the actual invocation mode, not the planned schedule.
+   - `started_at`: ISO-8601 UTC timestamp of *right now*. Never use midnight, the planned cron time, or a value copied from a prior run-log entry. Derive freshly each run.
+   Initial run-log shape: `{ run_id, trigger, started_at, status: "running", errors: [] }`
 
 ### Step 1: Build Query List
 
